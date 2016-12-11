@@ -27,10 +27,11 @@ glm::mat4 projection;	// projection matrix
 float eyex, eyey, eyez;	// eye position
 
 glm::vec3 position = glm::vec3(0.0);
-float theta = 0.0;
+double theta=1.5, phi=1.5;
+double r=6.0;
 
 stack<glm::mat4> matrixStack;
-glm::mat4 model = glm::mat4(1.0);
+glm::mat4 model;
 
 struct Master {
 	GLuint vao;
@@ -191,6 +192,14 @@ void forward(float distance, int modelLoc) {
 	model = glm::translate(model, glm::vec3(0.0, 0.0, distance));
 }
 
+void left(float angle) {
+	model = glm::rotate(model, -angle, glm::vec3(0.0, 1.0, 0.0));
+}
+
+void right(float angle) {
+	model = glm::rotate(model, angle, glm::vec3(0.0, 1.0, 0.0));
+}
+
 /*
 *  This procedure is called each time the screen needs
 *  to be redisplayed
@@ -223,9 +232,14 @@ void displayFunc() {
 	colour = glm::vec3(0.0, 1.0, 0.0);
 	glUniform4f(colourLoc, 0.0, 1.0, 0.0, 1.0);
 
-	forward(2, modelLoc);
+	model = glm::mat4(1.0);
+
+	forward(1, modelLoc);
 	glUniform4f(colourLoc, 1.0, 0.0, 0.0, 1.0);
-	forward(2, modelLoc);
+	left(45);
+	forward(1, modelLoc);
+	right(45);
+	forward(1, modelLoc);
 
 
 	glutSwapBuffers();
@@ -244,18 +258,29 @@ void keyboardFunc(unsigned char key, int x, int y) {
 
 	switch (key) {
 	case 'a':
-		eyez -= 0.1;
+		phi -= 0.1;
 		break;
 	case 'd':
-		eyez += 0.1;
+		phi += 0.1;
 		break;
 	case 'w':
-		eyex += 0.1;
+		theta += 0.1;
 		break;
 	case 's':
-		eyex -= 0.1;
+		theta -= 0.1;
+		break;
+	case 'q':
+		r += 0.1;
+		break;
+	case 'e':
+		r -= 0.1;
 		break;
 	}
+
+	eyex = r*sin(theta)*cos(phi);
+	eyey = r*sin(theta)*sin(phi);
+	eyez = r*cos(theta);
+
 	glutPostRedisplay();
 
 }
