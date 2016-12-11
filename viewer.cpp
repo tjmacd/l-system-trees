@@ -29,13 +29,15 @@ float eyex, eyey, eyez;	// eye position
 glm::vec3 position = glm::vec3(0.0);
 float theta = 0.0;
 
+stack<glm::mat4> matrixStack;
+glm::mat4 model = glm::mat4(1.0);
+
 struct Master {
 	GLuint vao;
 	int indices;
 	GLuint vbuffer;
 };
 
-Master *body;
 
 Master *cylinder(double radius, double height, int sides) {
 	double *x;
@@ -155,7 +157,6 @@ Master *cylinder(double radius, double height, int sides) {
 void init() {
 
 
-	body = cylinder(0.2, 1.0, 10);
 
 
 }
@@ -181,12 +182,13 @@ void changeSize(int w, int h) {
 }
 
 void forward(float distance, int modelLoc) {
-	Master *segment = cylinder(0.2, 1.0, 10);
-	glm::mat4 model = glm::mat4(1.0);
+	Master *segment = cylinder(0.2, distance, 10);
+	
 	glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
 	glBindVertexArray(segment->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, segment->vbuffer);
 	glDrawElements(GL_TRIANGLES, segment->indices, GL_UNSIGNED_SHORT, NULL);
+	model = glm::translate(model, glm::vec3(0.0, 0.0, distance));
 }
 
 /*
@@ -198,7 +200,7 @@ void displayFunc() {
 	glm::mat4 viewPerspective;
 	int viewLoc;
 	int modelLoc;
-	stack<glm::mat4> matrixStack;
+	
 	GLint vPosition;
 	int colourLoc;
 	glm::vec3 colour;
@@ -221,8 +223,9 @@ void displayFunc() {
 	colour = glm::vec3(0.0, 1.0, 0.0);
 	glUniform4f(colourLoc, 0.0, 1.0, 0.0, 1.0);
 
-	forward(10, modelLoc);
-
+	forward(2, modelLoc);
+	glUniform4f(colourLoc, 1.0, 0.0, 0.0, 1.0);
+	forward(2, modelLoc);
 
 
 	glutSwapBuffers();
