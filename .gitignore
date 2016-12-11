@@ -1,0 +1,10 @@
+*.sln
+*.VC.db
+*.vcxproj*
+*.jpg
+lab*
+Shaders.*
+*.obj
+tiny_obj_loader.*
+*.zip
+*/
