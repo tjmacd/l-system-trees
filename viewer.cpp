@@ -166,7 +166,7 @@ Master *cylinder(double radius, double height, int sides) {
 
 std::string applyRules(char c) {
 	if (c == 'F') {
-		return "TFF-[L-F+F+F]+[L+F-F-F]";
+		return "TFF-^[L-F+F^F]+&[L+F-F&F]";
 	}
 	else {
 		return string(1,c);
@@ -241,6 +241,16 @@ void right(float angle) {
 	model = glm::rotate(model, rangle, glm::vec3(0.0, 1.0, 0.0));
 }
 
+void up(float angle) {
+	float rangle = angle * M_PI / 180;
+	model = glm::rotate(model, rangle, glm::vec3(1.0, 0.0, 0.0));
+}
+
+void down(float angle) {
+	float rangle = angle * M_PI / 180;
+	model = glm::rotate(model, -rangle, glm::vec3(1.0, 0.0, 0.0));
+}
+
 void push() {
 	matrixStack.push(model);
 }
@@ -265,6 +275,12 @@ void drawLsystem(std::string instructions, float angle, float distance) {
 			break;
 		case '-':
 			left(angle);
+			break;
+		case '^':
+			up(angle);
+			break;
+		case '&':
+			down(angle);
 			break;
 		case '[':
 			push();
@@ -302,7 +318,7 @@ void displayFunc() {
 	viewPerspective = projection * view;
 
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(program);
 	viewLoc = glGetUniformLocation(program, "viewPerspective");
 	glUniformMatrix4fv(viewLoc, 1, 0, glm::value_ptr(viewPerspective));
@@ -323,6 +339,10 @@ void displayFunc() {
 	right(60);
 	forward(5);
 	left(60);
+	forward(5);
+	up(60);
+	forward(5);
+	down(60);
 	forward(5);
 	*/
 
@@ -376,7 +396,7 @@ int main(int argc, char **argv) {
 	*  the application and create the window
 	*/
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(500, 500);
 	window = glutCreateWindow("Lab Three");
@@ -393,6 +413,9 @@ int main(int argc, char **argv) {
 	glutDisplayFunc(displayFunc);
 	glutReshapeFunc(changeSize);
 	glutKeyboardFunc(keyboardFunc);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
 
 	int vs;
 	int fs;
