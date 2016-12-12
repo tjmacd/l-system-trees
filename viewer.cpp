@@ -162,7 +162,7 @@ Master *cylinder(double radius, double height, int sides) {
 
 std::string applyRules(char c) {
 	if (c == 'F') {
-		return "F-F++F-F";
+		return "FF-[-F+F+F]+[+F-F-F]";
 	}
 	else {
 		return string(1,c);
@@ -236,6 +236,15 @@ void right(float angle) {
 	model = glm::rotate(model, rangle, glm::vec3(0.0, 1.0, 0.0));
 }
 
+void push() {
+	matrixStack.push(model);
+}
+
+void pop() {
+	model = matrixStack.top();
+	matrixStack.pop();
+}
+
 void drawLsystem(std::string instructions, float angle, float distance) {
 	for (char c : instructions) {
 		switch (c) {
@@ -247,6 +256,12 @@ void drawLsystem(std::string instructions, float angle, float distance) {
 			break;
 		case '-':
 			left(angle);
+			break;
+		case '[':
+			push();
+			break;
+		case ']':
+			pop();
 			break;
 		}
 	}
@@ -286,7 +301,7 @@ void displayFunc() {
 
 	model = glm::mat4(1.0);
 
-	drawLsystem(lSystem, 60, 5);
+	drawLsystem(lSystem, 22, 1);
 	/*
 	forward(5);
 	right(60);
