@@ -7,7 +7,7 @@
 *  and displayed using OpenGL
 *
 ************************************************/
-
+#define _USE_MATH_DEFINES
 #include <Windows.h>
 #include <gl/glew.h>
 #include <gl/glut.h>
@@ -17,6 +17,7 @@
 #include "shaders.h"
 #include <stdio.h>
 #include <stack>
+#include <math.h>
 
 using namespace std;
 
@@ -32,6 +33,9 @@ double r=6.0;
 
 stack<glm::mat4> matrixStack;
 glm::mat4 model;
+std::string lSystem;
+
+int modelLoc;
 
 struct Master {
 	GLuint vao;
@@ -39,6 +43,7 @@ struct Master {
 	GLuint vbuffer;
 };
 
+Master *segment;
 
 Master *cylinder(double radius, double height, int sides) {
 	double *x;
@@ -181,10 +186,13 @@ std::string createLSystem(int n, std::string axiom) {
 	return newString;
 }
 
+
+
 void init() {
 
-	std::string system = createLSystem(4, "F");
-	printf("%s\n", system.c_str());
+	segment = cylinder(0.2, 1.0, 10);
+	lSystem = createLSystem(4, "F");
+	printf("%s\n", lSystem.c_str());
 
 }
 
@@ -208,22 +216,40 @@ void changeSize(int w, int h) {
 
 }
 
-void forward(float distance, int modelLoc) {
-	Master *segment = cylinder(0.2, distance, 10);
-	
+void forward(float distance) {
+	model = glm::scale(model, glm::vec3(1.0, 1.0, distance));
 	glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
 	glBindVertexArray(segment->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, segment->vbuffer);
 	glDrawElements(GL_TRIANGLES, segment->indices, GL_UNSIGNED_SHORT, NULL);
+	model = glm::scale(model, glm::vec3(1.0, 1.0, 1 / distance));
 	model = glm::translate(model, glm::vec3(0.0, 0.0, distance));
 }
 
 void left(float angle) {
-	model = glm::rotate(model, -angle, glm::vec3(0.0, 1.0, 0.0));
+	float rangle = angle * M_PI / 180;
+	model = glm::rotate(model, -rangle, glm::vec3(0.0, 1.0, 0.0));
 }
 
 void right(float angle) {
-	model = glm::rotate(model, angle, glm::vec3(0.0, 1.0, 0.0));
+	float rangle = angle * M_PI / 180;
+	model = glm::rotate(model, rangle, glm::vec3(0.0, 1.0, 0.0));
+}
+
+void drawLsystem(std::string instructions, float angle, float distance) {
+	for (char c : instructions) {
+		switch (c) {
+		case 'F':
+			forward(distance);
+			break;
+		case '+':
+			right(angle);
+			break;
+		case '-':
+			left(angle);
+			break;
+		}
+	}
 }
 
 /*
@@ -234,7 +260,7 @@ void displayFunc() {
 	glm::mat4 view;
 	glm::mat4 viewPerspective;
 	int viewLoc;
-	int modelLoc;
+	
 	
 	GLint vPosition;
 	int colourLoc;
@@ -260,13 +286,14 @@ void displayFunc() {
 
 	model = glm::mat4(1.0);
 
-	forward(1, modelLoc);
-	glUniform4f(colourLoc, 1.0, 0.0, 0.0, 1.0);
-	left(45);
-	forward(1, modelLoc);
-	right(45);
-	forward(1, modelLoc);
-
+	drawLsystem(lSystem, 60, 5);
+	/*
+	forward(5);
+	right(60);
+	forward(5);
+	left(60);
+	forward(5);
+	*/
 
 	glutSwapBuffers();
 
