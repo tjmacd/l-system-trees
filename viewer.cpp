@@ -29,13 +29,17 @@ float eyex, eyey, eyez;	// eye position
 
 glm::vec3 position = glm::vec3(0.0);
 double theta=1.5, phi=1.5;
-double r=6.0;
+double r=50.0;
 
 stack<glm::mat4> matrixStack;
 glm::mat4 model;
 std::string lSystem;
 
 int modelLoc;
+int colourLoc;
+
+float zmax = 0.0;
+float centre = 30.0;
 
 struct Master {
 	GLuint vao;
@@ -162,7 +166,7 @@ Master *cylinder(double radius, double height, int sides) {
 
 std::string applyRules(char c) {
 	if (c == 'F') {
-		return "FF-[-F+F+F]+[+F-F-F]";
+		return "TFF-[L-F+F+F]+[L+F-F-F]";
 	}
 	else {
 		return string(1,c);
@@ -224,6 +228,7 @@ void forward(float distance) {
 	glDrawElements(GL_TRIANGLES, segment->indices, GL_UNSIGNED_SHORT, NULL);
 	model = glm::scale(model, glm::vec3(1.0, 1.0, 1 / distance));
 	model = glm::translate(model, glm::vec3(0.0, 0.0, distance));
+
 }
 
 void left(float angle) {
@@ -245,6 +250,10 @@ void pop() {
 	matrixStack.pop();
 }
 
+void setColour(float r, float g, float b) {
+	glUniform4f(colourLoc, r, g, b, 1.0);
+}
+
 void drawLsystem(std::string instructions, float angle, float distance) {
 	for (char c : instructions) {
 		switch (c) {
@@ -263,6 +272,12 @@ void drawLsystem(std::string instructions, float angle, float distance) {
 		case ']':
 			pop();
 			break;
+		case 'T':
+			setColour(0.55, 0.30, 0.09);
+			break;
+		case 'L':
+			setColour(0.13, 0.52, 0.09);
+			break;
 		}
 	}
 }
@@ -278,11 +293,10 @@ void displayFunc() {
 	
 	
 	GLint vPosition;
-	int colourLoc;
 	glm::vec3 colour;
 
 	view = glm::lookAt(glm::vec3(eyex, eyey, eyez),
-		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(0.0f, 0.0f, centre),
 		glm::vec3(0.0f, 0.0f, 1.0f));
 
 	viewPerspective = projection * view;
@@ -302,6 +316,8 @@ void displayFunc() {
 	model = glm::mat4(1.0);
 
 	drawLsystem(lSystem, 22, 1);
+	
+
 	/*
 	forward(5);
 	right(60);
@@ -347,7 +363,7 @@ void keyboardFunc(unsigned char key, int x, int y) {
 
 	eyex = r*sin(theta)*cos(phi);
 	eyey = r*sin(theta)*sin(phi);
-	eyez = r*cos(theta);
+	eyez = r*cos(theta)+centre;
 
 	glutPostRedisplay();
 
@@ -393,8 +409,8 @@ int main(int argc, char **argv) {
 
 
 	eyex = 0.0;
-	eyey = 6.0;
-	eyez = 1.0;
+	eyey = r;
+	eyez = centre+6;
 
 	init();
 
