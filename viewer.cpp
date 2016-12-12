@@ -155,10 +155,36 @@ Master *cylinder(double radius, double height, int sides) {
 *  the data.
 */
 
+std::string applyRules(char c) {
+	if (c == 'F') {
+		return "F-F++F-F";
+	}
+	else {
+		return string(1,c);
+	}
+}
+
+std::string processString(std::string oldString) {
+	std::string newString = "";
+	for (char c : oldString) {
+		string a = applyRules(c);
+		newString += a;
+	}
+	return newString;
+}
+
+std::string createLSystem(int n, std::string axiom) {
+	std::string newString = axiom;
+	for (int i = 0; i < n; i++) {
+		newString = processString(newString);
+	}
+	return newString;
+}
+
 void init() {
 
-
-
+	std::string system = createLSystem(4, "F");
+	printf("%s\n", system.c_str());
 
 }
 
