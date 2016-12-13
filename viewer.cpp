@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <stack>
 #include <math.h>
+#include <map>
+#include "lsystem.h"
 
 using namespace std;
 
@@ -40,6 +42,8 @@ int colourLoc;
 
 float zmax = 0.0;
 float centre = 30.0;
+std::map<char, string> grammar;
+float angle;
 
 struct Master {
 	GLuint vao;
@@ -165,8 +169,8 @@ Master *cylinder(double radius, double height, int sides) {
 */
 
 std::string applyRules(char c) {
-	if (c == 'F') {
-		return "TFF-^[L-F+F^F]+&[L+F-F&F]";
+	if (grammar.count(c)) {
+		return grammar.at(c);
 	}
 	else {
 		return string(1,c);
@@ -193,10 +197,12 @@ std::string createLSystem(int n, std::string axiom) {
 
 
 void init() {
-
 	segment = cylinder(0.2, 1.0, 10);
-	lSystem = createLSystem(4, "F");
-	printf("%s\n", lSystem.c_str());
+	int iDepth;
+	string axiom;
+	std::string err = loadGrammar(iDepth, angle, axiom, grammar, "lsystem.txt");
+	lSystem = createLSystem(iDepth, axiom);
+	//printf("%s\n", lSystem.c_str());
 
 }
 
@@ -331,7 +337,7 @@ void displayFunc() {
 
 	model = glm::mat4(1.0);
 
-	drawLsystem(lSystem, 22, 1);
+	drawLsystem(lSystem, angle, 1);
 	
 
 	/*
@@ -374,10 +380,10 @@ void keyboardFunc(unsigned char key, int x, int y) {
 		theta -= 0.1;
 		break;
 	case 'q':
-		r += 0.1;
+		r += 0.5;
 		break;
 	case 'e':
-		r -= 0.1;
+		r -= 0.5;
 		break;
 	}
 
