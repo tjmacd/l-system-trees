@@ -44,6 +44,7 @@ float zmax = 0.0;
 float centre = 30.0;
 std::map<char, string> grammar;
 float angle;
+char *inputFile;
 
 struct Master {
 	GLuint vao;
@@ -196,15 +197,7 @@ std::string createLSystem(int n, std::string axiom) {
 
 
 
-void init() {
-	segment = cylinder(0.2, 1.0, 10);
-	int iDepth;
-	string axiom;
-	std::string err = loadGrammar(iDepth, angle, axiom, grammar, "lsystem.txt");
-	lSystem = createLSystem(iDepth, axiom);
-	//printf("%s\n", lSystem.c_str());
 
-}
 
 /*
 *  Executed each time the window is resized,
@@ -222,7 +215,7 @@ void changeSize(int w, int h) {
 
 	glViewport(0, 0, w, h);
 
-	projection = glm::perspective(45.0f, ratio, 1.0f, 100.0f);
+	projection = glm::perspective(45.0f, ratio, 1.0f, 2*zmax);
 
 }
 
@@ -234,7 +227,10 @@ void forward(float distance) {
 	glDrawElements(GL_TRIANGLES, segment->indices, GL_UNSIGNED_SHORT, NULL);
 	model = glm::scale(model, glm::vec3(1.0, 1.0, 1 / distance));
 	model = glm::translate(model, glm::vec3(0.0, 0.0, distance));
-
+	if (model[3].z > zmax) {
+		zmax = model[3].z;
+		r = zmax;
+	}
 }
 
 void left(float angle) {
@@ -249,12 +245,12 @@ void right(float angle) {
 
 void up(float angle) {
 	float rangle = angle * M_PI / 180;
-	model = glm::rotate(model, rangle, glm::vec3(1.0, 0.0, 0.0));
+	model = glm::rotate(model, -rangle, glm::vec3(1.0, 0.0, 0.0));
 }
 
 void down(float angle) {
 	float rangle = angle * M_PI / 180;
-	model = glm::rotate(model, -rangle, glm::vec3(1.0, 0.0, 0.0));
+	model = glm::rotate(model, rangle, glm::vec3(1.0, 0.0, 0.0));
 }
 
 void push() {
@@ -304,6 +300,25 @@ void drawLsystem(std::string instructions, float angle, float distance) {
 	}
 }
 
+void init() {
+	segment = cylinder(0.2, 1.0, 10);
+	int iDepth;
+	string axiom;
+	std::string err = loadGrammar(iDepth, angle, axiom, grammar, inputFile);
+	lSystem = createLSystem(iDepth, axiom);
+	printf("%s\n", lSystem.c_str());
+
+	model = glm::mat4(1.0);
+
+	drawLsystem(lSystem, angle, 1);
+	centre = zmax / 2;
+
+	eyex = 0.0;
+	eyey = r;
+	eyez = centre + 6;
+
+}
+
 /*
 *  This procedure is called each time the screen needs
 *  to be redisplayed
@@ -338,19 +353,8 @@ void displayFunc() {
 	model = glm::mat4(1.0);
 
 	drawLsystem(lSystem, angle, 1);
+	centre = zmax / 2;
 	
-
-	/*
-	forward(5);
-	right(60);
-	forward(5);
-	left(60);
-	forward(5);
-	up(60);
-	forward(5);
-	down(60);
-	forward(5);
-	*/
 
 	glutSwapBuffers();
 
@@ -397,6 +401,13 @@ void keyboardFunc(unsigned char key, int x, int y) {
 
 int main(int argc, char **argv) {
 
+	if (argc < 2) {
+		printf("usage: viewer [input_file]\n");
+		exit(0);
+	}
+
+	inputFile = argv[1];
+
 	/*
 	*  initialize glut, set some parameters for
 	*  the application and create the window
@@ -437,9 +448,7 @@ int main(int argc, char **argv) {
 	glUseProgram(program);
 
 
-	eyex = 0.0;
-	eyey = r;
-	eyez = centre+6;
+	
 
 	init();
 
