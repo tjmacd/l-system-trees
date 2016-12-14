@@ -1,10 +1,8 @@
 /************************************************
 *
-*             Lab 3
+*             CSCI 4110 Course Project
 *
-*  The stickman program.  This example shows
-*  how a hierarchical model can be constructed
-*  and displayed using OpenGL
+*  Draws trees using an l-system and turtle graphics
 *
 ************************************************/
 #define _USE_MATH_DEFINES
@@ -21,8 +19,6 @@
 #include <map>
 #include "lsystem.h"
 
-using namespace std;
-
 GLuint program;			// shader programs
 int window;
 
@@ -33,7 +29,7 @@ glm::vec3 position = glm::vec3(0.0);
 double theta=1.5, phi=1.5;
 double r=50.0;
 
-stack<glm::mat4> matrixStack;
+std::stack<glm::mat4> matrixStack;
 glm::mat4 model;
 std::string lSystem;
 
@@ -42,7 +38,6 @@ int colourLoc;
 
 float zmax = 0.0;
 float centre = 30.0;
-std::map<char, string> grammar;
 float angle;
 char *inputFile;
 
@@ -54,6 +49,9 @@ struct Master {
 
 Master *segment;
 
+/**
+*	Defines a cylinder to be drawn multiple times
+*/
 Master *cylinder(double radius, double height, int sides) {
 	double *x;
 	double *y;
@@ -63,12 +61,15 @@ Master *cylinder(double radius, double height, int sides) {
 	double dangle;
 	int i;
 	GLfloat *vertices;
+	GLfloat *normals;
 	GLushort *indices;
 	int j;
 	int base;
 	GLuint vbuffer;
 	GLuint ibuffer;
 	GLint vPosition;
+	GLint vNormal;
+	int nv = 3 * 2 * (sides + 1);
 
 	result = new Master;
 
@@ -87,26 +88,39 @@ Master *cylinder(double radius, double height, int sides) {
 		angle += dangle;
 	}
 
-	vertices = new GLfloat[3 * 2 * (sides + 1)];
+	vertices = new GLfloat[nv];
+	normals = new GLfloat[nv];
 	j = 0;
 
 	/*  bottom */
+	normals[j] = 0.0;
 	vertices[j++] = 0.0;
+	normals[j] = 0.0;
 	vertices[j++] = 0.0;
+	normals[j] = -1.0;
 	vertices[j++] = 0.0;
 	for (i = 0; i<sides; i++) {
+		normals[j] = x[i];
 		vertices[j++] = x[i];
+		normals[j] = y[i];
 		vertices[j++] = y[i];
+		normals[j] = 0.0;
 		vertices[j++] = 0.0;
 	}
 
 	/* top */
+	normals[j] = 0.0;
 	vertices[j++] = 0.0;
+	normals[j] = 0.0;
 	vertices[j++] = 0.0;
+	normals[j] = 1.0;
 	vertices[j++] = height;
 	for (i = 0; i<sides; i++) {
+		normals[j] = x[i];
 		vertices[j++] = x[i];
+		normals[j] = y[i];
 		vertices[j++] = y[i];
+		normals[j] = 0.0;
 		vertices[j++] = height;
 	}
 
@@ -149,7 +163,9 @@ Master *cylinder(double radius, double height, int sides) {
 	glGenBuffers(1, &vbuffer);
 	result->vbuffer = vbuffer;
 	glBindBuffer(GL_ARRAY_BUFFER, vbuffer);
-	glBufferData(GL_ARRAY_BUFFER, 3 * 2 * (sides + 1) * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 2*nv * sizeof(GLfloat), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, nv * sizeof(GLfloat), vertices);
+	glBufferSubData(GL_ARRAY_BUFFER, nv * sizeof(GLfloat), nv * sizeof(GLfloat), normals);
 
 	glGenBuffers(1, &ibuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibuffer);
@@ -158,46 +174,12 @@ Master *cylinder(double radius, double height, int sides) {
 	vPosition = glGetAttribLocation(program, "vPosition");
 	glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(vPosition);
+	vNormal = glGetAttribLocation(program, "vNormal");
+	glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, (void*)(nv * sizeof(GLfloat)));
+	glEnableVertexAttribArray(vNormal);
 
 	return(result);
 }
-
-/*
-*  The init procedure creates the OpenGL data structures
-*  that contain the triangle geometry, compiles our
-*  shader program and links the shader programs to
-*  the data.
-*/
-
-std::string applyRules(char c) {
-	if (grammar.count(c)) {
-		return grammar.at(c);
-	}
-	else {
-		return string(1,c);
-	}
-}
-
-std::string processString(std::string oldString) {
-	std::string newString = "";
-	for (char c : oldString) {
-		string a = applyRules(c);
-		newString += a;
-	}
-	return newString;
-}
-
-std::string createLSystem(int n, std::string axiom) {
-	std::string newString = axiom;
-	for (int i = 0; i < n; i++) {
-		newString = processString(newString);
-	}
-	return newString;
-}
-
-
-
-
 
 /*
 *  Executed each time the window is resized,
@@ -219,6 +201,11 @@ void changeSize(int w, int h) {
 
 }
 
+/**
+*	Turtle graphics functions
+*/
+
+// Moves the turtle forward
 void forward(float distance) {
 	model = glm::scale(model, glm::vec3(1.0, 1.0, distance));
 	glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
@@ -233,39 +220,47 @@ void forward(float distance) {
 	}
 }
 
+// Turns the turtle left
 void left(float angle) {
 	float rangle = angle * M_PI / 180;
 	model = glm::rotate(model, -rangle, glm::vec3(0.0, 1.0, 0.0));
 }
 
+// Turns the turtle right
 void right(float angle) {
 	float rangle = angle * M_PI / 180;
 	model = glm::rotate(model, rangle, glm::vec3(0.0, 1.0, 0.0));
 }
 
+// Turns the turtle forward
 void up(float angle) {
 	float rangle = angle * M_PI / 180;
 	model = glm::rotate(model, -rangle, glm::vec3(1.0, 0.0, 0.0));
 }
 
+// Turns the turtle backward
 void down(float angle) {
 	float rangle = angle * M_PI / 180;
 	model = glm::rotate(model, rangle, glm::vec3(1.0, 0.0, 0.0));
 }
 
+// Pushes the current turtle state onto the stack
 void push() {
 	matrixStack.push(model);
 }
 
+// Pops the old turtle state off the stack
 void pop() {
 	model = matrixStack.top();
 	matrixStack.pop();
 }
 
+// Changes the colour
 void setColour(float r, float g, float b) {
 	glUniform4f(colourLoc, r, g, b, 1.0);
 }
 
+// Interprets a string of instructions as turtle commands
 void drawLsystem(std::string instructions, float angle, float distance) {
 	for (char c : instructions) {
 		switch (c) {
@@ -300,12 +295,14 @@ void drawLsystem(std::string instructions, float angle, float distance) {
 	}
 }
 
+/**
+*	Initializes l-system and graphics variables
+*/
 void init() {
 	segment = cylinder(0.2, 1.0, 10);
 	int iDepth;
-	string axiom;
-	std::string err = loadGrammar(iDepth, angle, axiom, grammar, inputFile);
-	lSystem = createLSystem(iDepth, axiom);
+	std::string axiom;
+	std::string err = loadLSystem(lSystem, angle, inputFile);
 	printf("%s\n", lSystem.c_str());
 
 	model = glm::mat4(1.0);
@@ -327,7 +324,8 @@ void displayFunc() {
 	glm::mat4 view;
 	glm::mat4 viewPerspective;
 	int viewLoc;
-	
+	int materialLoc;
+	int lightLoc;
 	
 	GLint vPosition;
 	glm::vec3 colour;
@@ -346,6 +344,10 @@ void displayFunc() {
 	modelLoc = glGetUniformLocation(program, "model");
 	colourLoc = glGetUniformLocation(program, "colour");
 	vPosition = glGetAttribLocation(program, "vPosition");
+	lightLoc = glGetUniformLocation(program, "light");
+	glUniform3f(lightLoc, 1.0, 1.0, 1.0);
+	materialLoc = glGetUniformLocation(program, "material");
+	glUniform4f(materialLoc, 0.3, 0.7, 0.7, 150.0);
 
 	colour = glm::vec3(0.0, 1.0, 0.0);
 	glUniform4f(colourLoc, 0.0, 1.0, 0.0, 1.0);
@@ -416,7 +418,7 @@ int main(int argc, char **argv) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(500, 500);
-	window = glutCreateWindow("Lab Three");
+	window = glutCreateWindow("Course Project");
 
 	/*
 	*  initialize glew
@@ -440,15 +442,12 @@ int main(int argc, char **argv) {
 	/*
 	*  compile and build the shader program
 	*/
-	vs = buildShader(GL_VERTEX_SHADER, "example5.vs");
-	fs = buildShader(GL_FRAGMENT_SHADER, "example5.fs");
+	vs = buildShader(GL_VERTEX_SHADER, "project.vs");
+	fs = buildShader(GL_FRAGMENT_SHADER, "project.fs");
 	program = buildProgram(vs, fs, 0);
-	dumpProgram(program, "example 5");
+	dumpProgram(program, "CSCI 4110 Course Project");
 
 	glUseProgram(program);
-
-
-	
 
 	init();
 
