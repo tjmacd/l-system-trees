@@ -37,28 +37,34 @@ std::string loadLSystem(std::string& lSystem, float& angle, char* filename) {
 	std::stringstream err;
 	std::ifstream ifs(filename);
 	if (!ifs) {
-		err << "Cannot open file " << filename << std::endl;
+		err << "Cannot open file: " << filename << std::endl;
 		return err.str();
 	}
 
 	grammar.clear();
 
-	std::string line;
-	std::getline(ifs, line);
-	int num_iter = std::stoi(line);
-	std::getline(ifs, line);
-	angle = std::stof(line);
-	std::getline(ifs, line);
-	std::string axiom = line;
-	std::string rule;
-	while (std::getline(ifs, line)) {
-		if (line.length() > 2) {
-			rule = line.substr(2);
-			grammar.insert(std::pair<char, std::string>(line[0], rule));
+	try {
+		std::string line;
+		std::getline(ifs, line);
+		int num_iter = std::stoi(line);
+		std::getline(ifs, line);
+		angle = std::stof(line);
+		std::getline(ifs, line);
+		std::string axiom = line;
+		std::string rule;
+		while (std::getline(ifs, line)) {
+			if (line.length() > 2) {
+				rule = line.substr(2);
+				grammar.insert(std::pair<char, std::string>(line[0], rule));
+			}
 		}
-	}
 
-	lSystem = createLSystem(num_iter, axiom);
+		lSystem = createLSystem(num_iter, axiom);
+	}
+	catch (std::invalid_argument&) {
+		err << "File '" << filename << "' is not in proper format" << std::endl;
+	}
+	
 
 	return err.str();
 }

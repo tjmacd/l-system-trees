@@ -18,6 +18,8 @@
 #include <math.h>
 #include <map>
 #include "lsystem.h"
+#include <iostream>
+#include <string>
 
 GLuint program;			// shader programs
 int window;
@@ -303,7 +305,11 @@ void init() {
 	int iDepth;
 	std::string axiom;
 	std::string err = loadLSystem(lSystem, angle, inputFile);
-	printf("%s\n", lSystem.c_str());
+	if (!err.empty()) {
+		std::cerr << err << std::endl;
+		exit(1);
+	}
+	//printf("%s\n", lSystem.c_str());
 
 	model = glm::mat4(1.0);
 
