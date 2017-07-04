@@ -457,7 +457,7 @@ int main(int argc, char **argv) {
 
 	init();
 
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClearColor(0.52, 0.8, 0.98, 1.0);
 
 	glutMainLoop();
 
