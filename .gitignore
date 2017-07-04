@@ -8,3 +8,6 @@ Shaders.*
 tiny_obj_loader.*
 *.zip
 */
+*.dll
+*.docx
+*.pdf
