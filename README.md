@@ -1,9 +1,8 @@
 # l-system-trees
 OpenGL program which draws trees using L-systems and turtle graphics
 
-## Build Instructions
-The project can be built using Visual Studio by opening finalProject.vcxproj and building
-the project.
+## Dependencies
+Requires GLEW, GLUT and GLM libraries.
 
 ## Running Instructions
 To run the program, it requires one command line argument which is the filename of
